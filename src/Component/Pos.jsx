@@ -4,8 +4,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
 import products from "../assets/Product";
+import qrCode from "../assets/dummy-qr.png"; // Import a dummy QR code image
 
-const itemsPerPage = 6;
+const itemsPerPage = 4;
 
 function POSApp() {
   const [cart, setCart] = useState({});
@@ -15,6 +16,7 @@ function POSApp() {
   const [priceFilter, setPriceFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const addToCart = (item) => {
     setCart((prevCart) => {
@@ -54,6 +56,12 @@ function POSApp() {
       return;
     }
     setShowModal(true);
+    setPaymentProcessing(true);
+    setTimeout(() => {
+      toast.success("Payment Successful! Order Placed.");
+      setShowModal(false);
+      setCart({});
+    }, 3000);
   };
 
   const calculateTotal = () => {
@@ -151,6 +159,17 @@ function POSApp() {
           <Button variant="success" className="mt-3 ml-2" onClick={checkout}>Checkout</Button>
         </Card>
       </Container>
+
+      {/* Payment Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Scan QR Code to Pay</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          <Image src={qrCode} alt="Dummy QR Code" width={200} />
+          <p className="mt-3">Processing payment... Please wait</p>
+        </Modal.Body>
+      </Modal>
     </>
   );
 }
