@@ -1,46 +1,20 @@
 import React, { useState } from "react";
-import { Button, Card, Image, Form, Row, Col, Container, Navbar, Nav } from "react-bootstrap";
+import { Button, Card, Image, Form, Row, Col, Container, Navbar, Nav, Pagination, Modal } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
-import appleImg from "../assets/img/apple.jpeg";
-import bananaImg from "../assets/img/banana.png";
-import brinjalImg from "../assets/img/brinjal.jpeg";
-import broccoliImg from "../assets/img/broccoli.jpeg";
-import capsicumImg from "../assets/img/capcicum.jpeg";
-import carrotImg from "../assets/img/carrot.jpg";
-import cherryImg from "../assets/img/cherry.png";
-import grapesImg from "../assets/img/graphes.jpeg";
-import guavaImg from "../assets/img/guava.png";
-import mushroomImg from "../assets/img/mashroom.png";
-import onionImg from "../assets/img/onion.jpg";
-import pineappleImg from "../assets/img/pineapple.png";
-import redChillyImg from "../assets/img/red-chilly.jpeg";
-import strawberryImg from "../assets/img/strawberry.jpg";
-import tomatoImg from "../assets/img/tomato.png";
+import products from "../assets/Product";
 
-const products = [
-  { name: "Apple", price: 10, src: appleImg },
-  { name: "Banana", price: 7, src: bananaImg },
-  { name: "Brinjal", price: 20, src: brinjalImg },
-  { name: "Broccoli", price: 30, src: broccoliImg },
-  { name: "Capsicum", price: 8, src: capsicumImg },
-  { name: "Carrot", price: 15, src: carrotImg },
-  { name: "Cherry", price: 70, src: cherryImg },
-  { name: "Grapes", price: 10, src: grapesImg },
-  { name: "Guava", price: 15, src: guavaImg },
-  { name: "Mushroom", price: 100, src: mushroomImg },
-  { name: "Onion", price: 45, src: onionImg },
-  { name: "Pineapple", price: 20, src: pineappleImg },
-  { name: "Red Chilly", price: 15, src: redChillyImg },
-  { name: "Strawberry", price: 40, src: strawberryImg },
-  { name: "Tomato", price: 25, src: tomatoImg },
-];
+const itemsPerPage = 6;
 
 function POSApp() {
   const [cart, setCart] = useState({});
   const [customerName, setCustomerName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortType, setSortType] = useState("name");
+  const [priceFilter, setPriceFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
 
   const addToCart = (item) => {
     setCart((prevCart) => {
@@ -50,10 +24,7 @@ function POSApp() {
       } else {
         newCart[item.name] = { ...item, quantity: 1 };
       }
-      if (!newCart[item.name].toastShown) {
-        toast.success(`${item.name} added to cart!`, { toastId: item.name });
-        newCart[item.name].toastShown = true;
-      }
+      toast.success(`${item.name} added to cart!`);
       return newCart;
     });
   };
@@ -82,9 +53,7 @@ function POSApp() {
       toast.error("Cart is empty!");
       return;
     }
-    toast.success(`Thank you for your purchase, ${customerName}!`);
-    setCart({});
-    setCustomerName("");
+    setShowModal(true);
   };
 
   const calculateTotal = () => {
@@ -93,95 +62,95 @@ function POSApp() {
       .toFixed(2);
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const sortedProducts = [...products].sort((a, b) => {
+    return sortType === "price" ? a.price - b.price : a.name.localeCompare(b.name);
+  });
+
+  const filteredProducts = sortedProducts.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (!priceFilter || product.price <= Number(priceFilter))
+  );
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
     <>
-      <Navbar bg="dark" variant="dark" expand="lg">
+      <Navbar bg="primary" variant="dark" expand="lg" className="shadow-lg">
         <Container>
-          <Navbar.Brand href="#">POS Application</Navbar.Brand>
+          <Navbar.Brand href="#">POS System</Navbar.Brand>
           <Nav className="ml-auto">
-            <Nav.Link href="#home">Home</Nav.Link>
-            <Nav.Link href="#features">Features</Nav.Link>
-            <Nav.Link href="#pricing">Pricing</Nav.Link>
+            <Nav.Link href="#">Home</Nav.Link>
+            <Nav.Link href="#">Features</Nav.Link>
           </Nav>
         </Container>
       </Navbar>
-      <Container className="mt-5">
+
+      <Container className="mt-4">
         <ToastContainer />
-        <h1 className="mb-4 text-center">POS Application</h1>
+        <h2 className="text-center text-primary">POS System</h2>
+        
         <Row>
-          <Col md={6}>
-            <Card className="p-4 shadow-lg mb-4">
-              <h4>Enter Customer Name</h4>
-              <Form.Control 
-                type="text" 
-                placeholder="Enter name" 
-                value={customerName} 
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="mb-3"
-              />
-              <h4>Search for an item</h4>
-              <Form.Control 
-                type="text" 
-                placeholder="Search" 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="mb-3"
-              />
-              <h4>Select an item</h4>
-              <Row className="mt-3">
-                {filteredProducts.map((item, index) => (
-                  <Col xs={6} md={4} lg={3} key={index} className="text-center mb-3">
-                    <Image src={item.src} alt={item.name} width={80} height={80} rounded />
-                    <Button className="mt-2" variant="primary" onClick={() => addToCart(item)}>
+          <Col md={4} className="mb-3">
+            <Card className="p-4 shadow-sm border-primary">
+              <h4>Customer Info</h4>
+              <Form.Control type="text" placeholder="Enter name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mb-3" />
+              
+              <h4>Search & Filters</h4>
+              <Form.Control type="text" placeholder="Search by name" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mb-2" />
+              <Form.Control type="number" placeholder="Max Price" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)} className="mb-2" />
+              <Form.Select value={sortType} onChange={(e) => setSortType(e.target.value)} className="mb-3">
+                <option value="name">Sort by Name</option>
+                <option value="price">Sort by Price</option>
+              </Form.Select>
+            </Card>
+          </Col>
+
+          <Col md={8}>
+            <Row>
+              {paginatedProducts.map((item, index) => (
+                <Col xs={6} md={4} key={index} className="text-center mb-3">
+                  <Card className="p-2 shadow-sm text-center">
+                    <Image src={item.src} alt={item.name} width={180} height={180} rounded className="mx-auto d-block" />
+                    <Button className="mt-2 btn-sm" variant="success" onClick={() => addToCart(item)}>
                       {item.name} - ${item.price}
                     </Button>
-                  </Col>
-                ))}
-              </Row>
-            </Card>
-          </Col>
-          <Col md={6}>
-            <Card className="p-4 shadow-lg">
-              <h4>Shopping Cart</h4>
-              {Object.values(cart).length === 0 ? (
-                <p>Your cart is empty</p>
-              ) : (
-                <ul className="list-group">
-                  {Object.values(cart).map((item, index) => (
-                    <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        {item.name} - ${item.price} x {item.quantity}
-                      </div>
-                      <div>
-                        ${(item.price * item.quantity).toFixed(2)}
-                        <Button variant="danger" size="sm" className="ml-2" onClick={() => removeFromCart(item)}>
-                          Remove
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <h5 className="mt-3">Total: ${calculateTotal()}</h5>
-              <Button variant="warning" className="mt-3" onClick={clearCart}>
-                Clear Cart
-              </Button>
-              <Button variant="success" className="mt-3 ml-2" onClick={checkout}>
-                Checkout
-              </Button>
-            </Card>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+
+            <Pagination className="mt-3">
+              {Array.from({ length: totalPages }, (_, index) => (
+                <Pagination.Item key={index} active={index + 1 === currentPage} onClick={() => setCurrentPage(index + 1)}>
+                  {index + 1}
+                </Pagination.Item>
+              ))}
+            </Pagination>
           </Col>
         </Row>
+
+        <Card className="p-4 shadow-sm border-primary mt-4">
+          <h4>Shopping Cart</h4>
+          {Object.values(cart).length === 0 ? <p className="text-muted">Your cart is empty</p> : (
+            <ul className="list-group">
+              {Object.values(cart).map((item, index) => (
+                <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{item.name} - ${item.price} x {item.quantity}</span>
+                  <Button variant="danger" size="sm" onClick={() => removeFromCart(item)}>Remove</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <h5 className="mt-3">Total: ${calculateTotal()}</h5>
+          <Button variant="danger" className="mt-3" onClick={clearCart}>Clear Cart</Button>
+          <Button variant="success" className="mt-3 ml-2" onClick={checkout}>Checkout</Button>
+        </Card>
       </Container>
-      <footer className="bg-dark text-white text-center py-3 mt-5">
-        <Container>
-          <p>&copy; 2023 POS Application. All rights reserved.</p>
-        </Container>
-      </footer>
     </>
   );
 }
